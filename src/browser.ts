@@ -12,6 +12,7 @@ export async function newBrowser(): Promise<Browser> {
 			// https://stackoverflow.com/questions/52464583/possible-to-get-puppeteer-audio-feed-and-or-input-audio-directly-to-puppeteer
 			// https://kapeli.com/cheat_sheets/Chromium_Command_Line_Switches.docset/Contents/Resources/Documents/index
 			'--use-fake-ui-for-media-stream',
+			// "--use-file-for-fake-video-capture=",
 			'--use-fake-device-for-media-stream',
 			'--use-file-for-fake-audio-capture=/home/mj/experiment/meet-the-bots/example.wav',
 			'--allow-file-access',

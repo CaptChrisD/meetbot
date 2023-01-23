@@ -4,7 +4,7 @@ import { Browser, Page } from 'puppeteer';
 import { newPage } from '../browser';
 import { Feature } from './features';
 import { clickText, peopleInMeet } from './google-meet-helpers';
-import totp = require('totp-generator');
+// import totp = require('totp-generator');
 
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -23,9 +23,9 @@ export interface Bot {
 	): this;
 }
 
-const login = process.env.GOOGLE_EMAIL;
-const password = process.env.GOOGLE_PASSWORD;
-const totpSecret = process.env.GOOGLE_TOTP_SECRET;
+// const login = process.env.GOOGLE_EMAIL;
+// const password = process.env.GOOGLE_PASSWORD;
+// const totpSecret = process.env.GOOGLE_TOTP_SECRET;
 
 class MeetBot implements Bot {
 	public page: Page | null = null;
@@ -74,27 +74,29 @@ class MeetBot implements Bot {
 		try {
 			this.emit('joining', null);
 
-			await this.login();
+			// await this.login();
 
 			console.log('going to Meet after signing in');
-			await this.page.screenshot({ path: 'start-meet.png' });
+			await this.page.screenshot({ path: 'screenshots/start-meet.png' });
 			await this.page.goto(this.url + '?hl=en', {
 				waitUntil: 'networkidle0',
 				timeout: 30000,
 			});
 			// await page.screenshot({ path: 'meet-loaded.png' });
 
-			await this.page.keyboard.type('Hubot', { delay: 10 });
+			await this.page.keyboard.type('MeetingIQ', { delay: 10 });
+			await this.page.screenshot({ path: 'screenshots/name-entered.png' });
 
 			// console.log('turn off cam using Ctrl+E');
-			await this.page.waitForTimeout(3000);
-			await this.page.keyboard.down('ControlLeft');
-			await this.page.keyboard.press('KeyE');
-			await this.page.keyboard.up('ControlLeft');
-			await this.page.waitForTimeout(100);
+			// await this.page.waitForTimeout(3000);
+			// await this.page.keyboard.down('ControlLeft');
+			// await this.page.keyboard.press('KeyE');
+			// await this.page.keyboard.up('ControlLeft');
+			// await this.page.waitForTimeout(100);
 
 			// console.log('turn off mic using Ctrl+D');
 			await this.page.waitForTimeout(1000);
+			await this.page.screenshot({ path: 'screenshots/cam-off.png' });
 			await this.page.keyboard.down('ControlLeft');
 			await this.page.keyboard.press('KeyD');
 			await this.page.keyboard.up('ControlLeft');
@@ -238,65 +240,65 @@ class MeetBot implements Bot {
 		}
 	}
 
-	private async login() {
-		if (this.page === null) {
-			throw new Error('Meetbot cannot join a meet without an initialized page');
-		}
-		if (!login || !password || !totpSecret) {
-			console.log('running unauthenticated');
-			return false;
-		}
+	// private async login() {
+	// 	if (this.page === null) {
+	// 		throw new Error('Meetbot cannot join a meet without an initialized page');
+	// 	}
+	// 	if (!login || !password || !totpSecret) {
+	// 		console.log('running unauthenticated');
+	// 		return false;
+	// 	}
 
-		const resp = await this.page.goto('https://accounts.google.com/?hl=en');
-		if (resp.url().includes('myaccount.google.com')) {
-			console.log("we're already logged in");
-			return true;
-		}
-		await this.page.evaluate(() => {
-			// prevent chromium from using smartcards (aka YubiKeys) as that blocks the process
-			window.navigator.credentials.get = () =>
-				Promise.reject('no yubi-key for you');
-		});
+	// 	const resp = await this.page.goto('https://accounts.google.com/?hl=en');
+	// 	if (resp.url().includes('myaccount.google.com')) {
+	// 		console.log("we're already logged in");
+	// 		return true;
+	// 	}
+	// 	await this.page.evaluate(() => {
+	// 		// prevent chromium from using smartcards (aka YubiKeys) as that blocks the process
+	// 		window.navigator.credentials.get = () =>
+	// 			Promise.reject('no yubi-key for you');
+	// 	});
 
-		console.log('typing out email');
-		await this.page.waitForSelector('input[type="email"]');
-		await this.page.waitForSelector('#identifierNext');
-		await this.page.click('input[type="email"]');
-		await this.page.keyboard.type(login, { delay: 10 });
-		let navigationPromise = this.page.waitForNavigation();
-		await this.page.click('#identifierNext');
-		await navigationPromise;
-		await this.page.waitForTimeout(600); // animations...
+	// 	console.log('typing out email');
+	// 	await this.page.waitForSelector('input[type="email"]');
+	// 	await this.page.waitForSelector('#identifierNext');
+	// 	await this.page.click('input[type="email"]');
+	// 	await this.page.keyboard.type(login, { delay: 10 });
+	// 	let navigationPromise = this.page.waitForNavigation();
+	// 	await this.page.click('#identifierNext');
+	// 	await navigationPromise;
+	// 	await this.page.waitForTimeout(600); // animations...
 
-		console.log('typing out password');
-		await this.page.waitForSelector('input[type="password"]');
-		await this.page.waitForSelector('#passwordNext');
-		await this.page.click('input[type="password"]');
-		await this.page.keyboard.type(password, { delay: 10 });
-		navigationPromise = this.page.waitForNavigation();
-		await this.page.click('#passwordNext');
-		await navigationPromise;
+	// 	console.log('typing out password');
+	// 	await this.page.waitForSelector('input[type="password"]');
+	// 	await this.page.waitForSelector('#passwordNext');
+	// 	await this.page.click('input[type="password"]');
+	// 	await this.page.keyboard.type(password, { delay: 10 });
+	// 	navigationPromise = this.page.waitForNavigation();
+	// 	await this.page.click('#passwordNext');
+	// 	await navigationPromise;
 
-		console.log('doing 2FA login');
-		// HACK this is soooo dirty...
-		await this.page.waitForTimeout(2000);
-		navigationPromise = this.page.waitForNavigation();
-		await clickText(this.page, 'Try another way');
-		await navigationPromise;
-		await this.page.waitForTimeout(2000);
-		navigationPromise = this.page.waitForNavigation();
-		await clickText(this.page, 'Google Authenticator');
-		await navigationPromise;
-		await this.page.waitForTimeout(2000);
-		await this.page.keyboard.type(totp(totpSecret).toString(), {
-			delay: 100,
-		});
-		await this.page.keyboard.press('Enter');
-		await this.page.waitForTimeout(3000);
+	// 	console.log('doing 2FA login');
+	// 	// HACK this is soooo dirty...
+	// 	await this.page.waitForTimeout(2000);
+	// 	navigationPromise = this.page.waitForNavigation();
+	// 	await clickText(this.page, 'Try another way');
+	// 	await navigationPromise;
+	// 	await this.page.waitForTimeout(2000);
+	// 	navigationPromise = this.page.waitForNavigation();
+	// 	await clickText(this.page, 'Google Authenticator');
+	// 	await navigationPromise;
+	// 	await this.page.waitForTimeout(2000);
+	// 	await this.page.keyboard.type(totp(totpSecret).toString(), {
+	// 		delay: 100,
+	// 	});
+	// 	await this.page.keyboard.press('Enter');
+	// 	await this.page.waitForTimeout(3000);
 
-		await this.page.screenshot({ path: 'after-login.png' });
-		return true;
-	}
+	// 	await this.page.screenshot({ path: 'after-login.png' });
+	// 	return true;
+	// }
 
 	on<K extends keyof BotEvents, T extends BotEvents[K]>(
 		eventName: K,

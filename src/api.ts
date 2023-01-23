@@ -37,6 +37,7 @@ api.post('/join', async (req, res) => {
 });
 
 api.get('/meets', async (_req, res) => {
+	console.log('Returning Meets');
 	const bots = await meetbotManager.listBots();
 	return res.status(200).send({ items: bots, count: bots.length });
 });
